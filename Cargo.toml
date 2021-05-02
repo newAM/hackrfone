@@ -1,0 +1,26 @@
+[package]
+name = "hackrfone"
+version = "0.1.0"
+authors = ["Alex M. <alexmgit@protonmail.com>"]
+edition = "2018"
+repository = "https://github.com/newAM/hackrfone"
+license = "MIT"
+description = "Rust library for the HackRF One software defined radio."
+readme = "README.md"
+keywords = ["hackrf", "sdr"]
+categories = ["hardware-support"]
+homepage = "https://github.com/newAM/hackrfone"
+
+[dependencies]
+rusb = "~0.8"
+
+[dependencies.num-complex]
+version = "~0.4"
+optional = true
+
+[dev-dependencies]
+version-sync = "~0.9.2"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
