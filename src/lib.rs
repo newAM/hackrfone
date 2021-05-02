@@ -665,7 +665,7 @@ mod freq_params {
 /// radio.stop_rx()?;
 ///
 /// for iq in data.chunks_exact(2) {
-///     let cplx: num_complex::Complex32 = iq_to_cplx(iq[0], iq[1]);
+///     let cplx: num_complex::Complex<i8> = iq_to_cplx(iq[0], iq[1]);
 ///     // .. do whatever you want with cplx here
 /// }
 ///
@@ -676,12 +676,12 @@ mod freq_params {
 ///
 /// ```
 /// use hackrfone::iq_to_cplx;
-/// use num_complex::Complex32;
+/// use num_complex::Complex;
 ///
-/// assert_eq!(iq_to_cplx(255, 1), Complex32::new(-1.0, 1.0));
+/// assert_eq!(iq_to_cplx(255, 1), Complex::new(-1, 1));
 /// ```
 #[cfg(feature = "num-complex")]
 #[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
-pub fn iq_to_cplx(i: u8, q: u8) -> num_complex::Complex32 {
-    num_complex::Complex32::new(f32::from(i as i8), f32::from(q as i8))
+pub fn iq_to_cplx(i: u8, q: u8) -> num_complex::Complex<i8> {
+    num_complex::Complex::new(i as i8, q as i8)
 }
