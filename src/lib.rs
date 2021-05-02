@@ -89,7 +89,7 @@ impl From<TranscieverMode> for u16 {
 }
 
 /// HackRF One errors.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Error {
     /// USB error.
     Usb(rusb::Error),
@@ -120,6 +120,14 @@ impl From<rusb::Error> for Error {
         Error::Usb(e)
     }
 }
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for Error {}
 
 /// Typestate for RX mode.
 #[derive(Debug)]
