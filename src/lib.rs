@@ -657,7 +657,7 @@ mod freq_params {
 /// Post-processing sample data.
 ///
 /// ```no_run
-/// use hackrfone::{iq_to_cplx, HackRfOne, RxMode, UnknownMode};
+/// use hackrfone::{iq_to_cplx_i8, HackRfOne, RxMode, UnknownMode};
 ///
 /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
 /// let mut radio: HackRfOne<RxMode> = radio.into_rx_mode()?;
@@ -665,7 +665,7 @@ mod freq_params {
 /// radio.stop_rx()?;
 ///
 /// for iq in data.chunks_exact(2) {
-///     let cplx: num_complex::Complex<i8> = iq_to_cplx(iq[0], iq[1]);
+///     let cplx: num_complex::Complex<i8> = iq_to_cplx_i8(iq[0], iq[1]);
 ///     // .. do whatever you want with cplx here
 /// }
 ///
@@ -675,13 +675,56 @@ mod freq_params {
 /// Guide level explanation.
 ///
 /// ```
-/// use hackrfone::iq_to_cplx;
+/// use hackrfone::iq_to_cplx_i8;
 /// use num_complex::Complex;
 ///
-/// assert_eq!(iq_to_cplx(255, 1), Complex::new(-1, 1));
+/// assert_eq!(iq_to_cplx_i8(255, 1), Complex::new(-1, 1));
 /// ```
 #[cfg(feature = "num-complex")]
 #[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
-pub fn iq_to_cplx(i: u8, q: u8) -> num_complex::Complex<i8> {
+pub fn iq_to_cplx_i8(i: u8, q: u8) -> num_complex::Complex<i8> {
     num_complex::Complex::new(i as i8, q as i8)
+}
+
+/// Convert an IQ sample pair to a floating point complex number.
+///
+/// Generally you will want to use [`iq_to_cplx_i8`] for storing or transfering
+/// data because the samples are 2-bytes in the native i8, vs 8-bytes in f32.
+///
+/// Floats are easier to work with for running samples through digital signal
+/// processing algorithms (e.g. discrete fourier transform) where the i8 can
+/// easily saturate.
+///
+/// # Example
+///
+/// Post-processing sample data.
+///
+/// ```no_run
+/// use hackrfone::{iq_to_cplx_f32, HackRfOne, RxMode, UnknownMode};
+///
+/// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
+/// let mut radio: HackRfOne<RxMode> = radio.into_rx_mode()?;
+/// let data: Vec<u8> = radio.rx()?;
+/// radio.stop_rx()?;
+///
+/// for iq in data.chunks_exact(2) {
+///     let cplx: num_complex::Complex<f32> = iq_to_cplx_f32(iq[0], iq[1]);
+///     // .. do whatever you want with cplx here
+/// }
+///
+/// # Ok::<(), hackrfone::Error>(())
+/// ```
+///
+/// Guide level explanation.
+///
+/// ```
+/// use hackrfone::iq_to_cplx_f32;
+/// use num_complex::Complex;
+///
+/// assert_eq!(iq_to_cplx_f32(255, 1), Complex::new(-1.0, 1.0));
+/// ```
+#[cfg(feature = "num-complex")]
+#[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
+pub fn iq_to_cplx_f32(i: u8, q: u8) -> num_complex::Complex<f32> {
+    num_complex::Complex::new(i as i8 as f32, q as i8 as f32)
 }

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `impl std::error::Error for Error`.
 - Added `Copy, Clone, PartialEq, Eq` traits for `Error`.
+- Added `iq_to_cplx_i8`.
+
+### Changed
+- Changed the name of `iq_to_cplx` to `iq_to_cplx_f32`.
 
 ### Changed
 - Changed the return type of `iq_to_cplx` from `Complex<f32>` to `Complex<i8>`.
