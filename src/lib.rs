@@ -1,7 +1,7 @@
 //! HackRF One API.
 //!
 //! To get started take a look at [`HackRfOne::new`].
-#![doc(html_root_url = "https://docs.rs/hackrfone/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.0")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
@@ -351,6 +351,9 @@ impl<MODE> HackRfOne<MODE> {
 
     /// Enable the RX/TX RF amplifier.
     ///
+    /// In GNU radio this is used as the RF gain, where a value of 0 dB is off,
+    /// and a value of 14 dB is on.
+    ///
     /// # Example
     ///
     /// Disable the amplifier.
@@ -440,6 +443,20 @@ impl<MODE> HackRfOne<MODE> {
     /// Set the LNA (low noise amplifier) gain.
     ///
     /// Range 0 to 40dB in 8dB steps.
+    ///
+    /// This is also known as the IF gain.
+    ///
+    /// # Example
+    ///
+    /// Set the LNA gain to 16 dB (generally a reasonable gain to start with).
+    ///
+    /// ```no_run
+    /// use hackrfone::{HackRfOne, UnknownMode};
+    ///
+    /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
+    /// radio.set_lna_gain(16)?;
+    /// # Ok::<(), hackrfone::Error>(())
+    /// ```
     pub fn set_lna_gain(&mut self, gain: u16) -> Result<(), Error> {
         if gain > 40 {
             Err(Error::Argument)
@@ -456,6 +473,21 @@ impl<MODE> HackRfOne<MODE> {
     /// Set the VGA (variable gain amplifier) gain.
     ///
     /// Range 0 to 62dB in 2dB steps.
+    ///
+    /// This is also known as the baseband (BB) gain.
+    ///
+    /// # Example
+    ///
+    /// Set the VGA gain to 16 dB (generally a reasonable gain to start with).
+    ///
+    ///
+    /// ```no_run
+    /// use hackrfone::{HackRfOne, UnknownMode};
+    ///
+    /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
+    /// radio.set_vga_gain(16)?;
+    /// # Ok::<(), hackrfone::Error>(())
+    /// ```
     pub fn set_vga_gain(&mut self, gain: u16) -> Result<(), Error> {
         if gain > 62 {
             Err(Error::Argument)
