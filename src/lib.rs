@@ -585,8 +585,8 @@ impl HackRfOne<RxMode> {
     ///
     /// This uses a bulk transfer to get one MTU (maximum transmission unit)
     /// of data in a single shot.  The data format is pairs of signed 8-bit IQ.
-    /// Use the [`iq_to_cplx`] helper to convert the data to a more manageable
-    /// format.
+    /// Use the [`iq_to_cplx_i8`] or [`iq_to_cplx_f32`] helpes to convert the
+    /// data to a more manageable format.
     ///
     /// Unlike `libhackrf` this does not spawn a sampling thread.
     ///
@@ -602,7 +602,8 @@ impl HackRfOne<RxMode> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     ///
-    /// [`iq_to_cplx`]: crate::iq_to_cplx
+    /// [`iq_to_cplx_i8`]: crate::iq_to_cplx_i8
+    /// [`iq_to_cplx_f32`]: crate::iq_to_cplx_f32
     pub fn rx(&mut self) -> Result<Vec<u8>, Error> {
         const ENDPOINT: u8 = 0x81;
         const MTU: usize = 128 * 1024;
