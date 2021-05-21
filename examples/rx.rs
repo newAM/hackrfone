@@ -84,9 +84,10 @@ fn main() {
 
     println!("Shutting down sample thread");
 
-    exit_tx
-        .send(())
-        .expect("Failed to send exit event to sample thread");
+    if let Err(e) = exit_tx.send(()) {
+        println!("Failed to send exit event (receiver disconnected): {}", e);
+    }
+
     sample_thread
         .join()
         .expect("Failed to join sample thread")

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Added tested platforms to the README.
+
+### Fixed
+- Fixed a panic condition in the `rx` example that occurred when the sample
+  thread disconnected before the main thread requested a disconnection.
+
 ## [0.2.0] - 2021-05-09
 ### Added
 - Added `impl std::error::Error for Error`.
