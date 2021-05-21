@@ -13,5 +13,8 @@ This is not a wrapper around `libhackrf`, this is a re-implementation of
 This is currently in an *experimental* state, and it is incomplete.
 For full feature support use the official `libhackrf` C library.
 
+This is tested only on Linux, but it will likely work on other platforms where
+`libhackrf` works.
+
 [rusb]: https://github.com/a1ien/rusb
 [HackRF One]: https://greatscottgadgets.com/hackrf/one/
