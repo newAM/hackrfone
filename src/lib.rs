@@ -571,6 +571,7 @@ impl<MODE> HackRfOne<MODE> {
     /// ```
     pub fn into_rx_mode(mut self) -> Result<HackRfOne<RxMode>, Error> {
         self.set_transceiver_mode(TranscieverMode::Receive)?;
+        self.dh.claim_interface(0)?;
         Ok(HackRfOne {
             dh: self.dh,
             desc: self.desc,
@@ -627,6 +628,7 @@ impl HackRfOne<RxMode> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     pub fn stop_rx(mut self) -> Result<HackRfOne<UnknownMode>, Error> {
+        self.dh.release_interface(0)?;
         self.set_transceiver_mode(TranscieverMode::Off)?;
         Ok(HackRfOne {
             dh: self.dh,
