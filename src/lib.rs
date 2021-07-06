@@ -1,7 +1,7 @@
 //! HackRF One API.
 //!
 //! To get started take a look at [`HackRfOne::new`].
-#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.0")]
+#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.1")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
@@ -586,7 +586,7 @@ impl HackRfOne<RxMode> {
     ///
     /// This uses a bulk transfer to get one MTU (maximum transmission unit)
     /// of data in a single shot.  The data format is pairs of signed 8-bit IQ.
-    /// Use the [`iq_to_cplx_i8`] or [`iq_to_cplx_f32`] helpes to convert the
+    /// Use the [`iq_to_cplx_i8`] or [`iq_to_cplx_f32`] helpers to convert the
     /// data to a more manageable format.
     ///
     /// Unlike `libhackrf` this does not spawn a sampling thread.
