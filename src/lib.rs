@@ -1,7 +1,7 @@
 //! HackRF One API.
 //!
 //! To get started take a look at [`HackRfOne::new`].
-#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.1")]
+#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.2")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
@@ -461,7 +461,7 @@ impl<MODE> HackRfOne<MODE> {
         if gain > 40 {
             Err(Error::Argument)
         } else {
-            let buf: [u8; 1] = self.read_control(Request::SetVgaGain, gain & !0x07, 0)?;
+            let buf: [u8; 1] = self.read_control(Request::SetLnaGain, gain & !0x07, 0)?;
             if buf[0] == 0 {
                 Err(Error::Argument)
             } else {
