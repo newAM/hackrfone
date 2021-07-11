@@ -461,7 +461,7 @@ impl<MODE> HackRfOne<MODE> {
         if gain > 40 {
             Err(Error::Argument)
         } else {
-            let buf: [u8; 1] = self.read_control(Request::SetLnaGain, gain & !0x07, 0)?;
+            let buf: [u8; 1] = self.read_control(Request::SetLnaGain, 0, gain & !0x07)?;
             if buf[0] == 0 {
                 Err(Error::Argument)
             } else {
@@ -492,7 +492,7 @@ impl<MODE> HackRfOne<MODE> {
         if gain > 62 {
             Err(Error::Argument)
         } else {
-            let buf: [u8; 1] = self.read_control(Request::SetVgaGain, gain & !0b1, 0)?;
+            let buf: [u8; 1] = self.read_control(Request::SetVgaGain, 0, gain & !0b1)?;
             if buf[0] == 0 {
                 Err(Error::Argument)
             } else {
@@ -508,7 +508,7 @@ impl<MODE> HackRfOne<MODE> {
         if gain > 47 {
             Err(Error::Argument)
         } else {
-            let buf: [u8; 1] = self.read_control(Request::SetTxvgaGain, gain, 0)?;
+            let buf: [u8; 1] = self.read_control(Request::SetTxvgaGain, 0, gain)?;
             if buf[0] == 0 {
                 Err(Error::Argument)
             } else {
