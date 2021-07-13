@@ -1,7 +1,7 @@
 //! HackRF One API.
 //!
 //! To get started take a look at [`HackRfOne::new`].
-#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.2")]
+#![doc(html_root_url = "https://docs.rs/hackrfone/0.2.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(missing_docs)]
 
