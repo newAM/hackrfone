@@ -3,15 +3,14 @@
 //! To get started take a look at [`HackRfOne::new`].
 #![doc(html_root_url = "https://docs.rs/hackrfone/0.2.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 pub use rusb;
 
 use rusb::{request_type, Direction, GlobalContext, Recipient, RequestType, UsbContext, Version};
-use std::{convert::TryFrom, time::Duration};
+use std::time::Duration;
 
 #[cfg(feature = "num-complex")]
-#[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
 pub use num_complex;
 
 /// HackRF USB vendor ID.
@@ -227,7 +226,7 @@ impl<MODE> HackRfOne<MODE> {
             request.into(),
             value,
             index,
-            &buf,
+            buf,
             self.to,
         )?;
         if n != buf.len() {
@@ -605,6 +604,7 @@ impl HackRfOne<RxMode> {
     ///
     /// [`iq_to_cplx_i8`]: crate::iq_to_cplx_i8
     /// [`iq_to_cplx_f32`]: crate::iq_to_cplx_f32
+    #[cfg_attr(not(feature = "num-complex"), allow(broken_intra_doc_links))]
     pub fn rx(&mut self) -> Result<Vec<u8>, Error> {
         const ENDPOINT: u8 = 0x81;
         const MTU: usize = 128 * 1024;
@@ -716,7 +716,6 @@ mod freq_params {
 /// assert_eq!(iq_to_cplx_i8(255, 1), Complex::new(-1, 1));
 /// ```
 #[cfg(feature = "num-complex")]
-#[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
 pub fn iq_to_cplx_i8(i: u8, q: u8) -> num_complex::Complex<i8> {
     num_complex::Complex::new(i as i8, q as i8)
 }
@@ -759,7 +758,6 @@ pub fn iq_to_cplx_i8(i: u8, q: u8) -> num_complex::Complex<i8> {
 /// assert_eq!(iq_to_cplx_f32(255, 1), Complex::new(-1.0, 1.0));
 /// ```
 #[cfg(feature = "num-complex")]
-#[cfg_attr(docsrs, doc(cfg(feature = "num-complex")))]
 pub fn iq_to_cplx_f32(i: u8, q: u8) -> num_complex::Complex<f32> {
     num_complex::Complex::new(i as i8 as f32, q as i8 as f32)
 }

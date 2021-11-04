@@ -6,49 +6,50 @@ on:
       - 'v*'
   pull_request:
   schedule:
-    - cron: "13 3 * * *"
+    - cron: "17 3 * * 2"
 
 name: CI
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env: {"RUSTFLAGS": "-D warnings"}
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: RUSTFLAGS="-D warnings" cargo build
-      - run: RUSTFLAGS="-D warnings" cargo build --features num-complex
-      - run: RUSTFLAGS="-D warnings" cargo build --all-features
+      - run: cargo build
+      - run: cargo build --features num-complex
+      - run: cargo build --all-features
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
       - run: cargo test --all-features
 
   clippy:
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: clippy
-      - uses: actions-rs/clippy-check@v1.0.7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+      # not using clippy-check due to this issue:
+      # https://github.com/actions-rs/clippy-check/issues/2
+      - run: cargo clippy --all-features -- --deny warnings
 
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt
@@ -56,9 +57,10 @@ jobs:
 
   doc:
     runs-on: ubuntu-latest
+    env: {"RUSTDOCFLAGS": "-D warnings"}
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
       - run: cargo doc --no-default-features
@@ -66,12 +68,13 @@ jobs:
 
   rustdoc:
     runs-on: ubuntu-latest
+    env: {"RUSTDOCFLAGS": "-D warnings --cfg docsrs"}
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-      - run: RUSTDOCFLAGS='--cfg docsrs' cargo +nightly rustdoc --all-features
+      - run: cargo +nightly rustdoc --all-features
 
   release:
     name: crates.io release
@@ -79,8 +82,8 @@ jobs:
     needs: [build, test, clippy, format, doc, rustdoc]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.5
-      - uses: actions-rs/toolchain@v1.0.7
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
       - run: cargo publish --token ${CRATES_IO_TOKEN}
