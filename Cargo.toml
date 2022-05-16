@@ -1,7 +1,7 @@
 [package]
 name = "hackrfone"
 version = "0.2.3"
-authors = ["Alex Martens <alexmgit@protonmail.com>"]
+authors = ["Alex Martens <alex@thinglab.org>"]
 edition = "2021"
 repository = "https://github.com/newAM/hackrfone"
 license = "MIT"
