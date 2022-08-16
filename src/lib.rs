@@ -603,7 +603,7 @@ impl HackRfOne<RxMode> {
     ///
     /// [`iq_to_cplx_i8`]: crate::iq_to_cplx_i8
     /// [`iq_to_cplx_f32`]: crate::iq_to_cplx_f32
-    #[cfg_attr(not(feature = "num-complex"), allow(broken_intra_doc_links))]
+    #[cfg_attr(not(feature = "num-complex"), allow(rustdoc::broken_intra_doc_links))]
     pub fn rx(&mut self) -> Result<Vec<u8>, Error> {
         const ENDPOINT: u8 = 0x81;
         const MTU: usize = 128 * 1024;
