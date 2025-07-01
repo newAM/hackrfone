@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed the edition from 2018 to 2024.
+- Updated rusb from `0.8` to `0.9`.
 
 ## [0.2.3] - 2021-07-12
 
