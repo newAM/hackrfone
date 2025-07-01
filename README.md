@@ -10,7 +10,7 @@ This is a rust API for the [HackRF One] software defined radio.
 This is not a wrapper around `libhackrf`, this is a re-implementation of
 `libhackrf` in rust, using the [rusb] `libusb` wrappers.
 
-This is currently in an *experimental* state, and it is incomplete.
+This is currently in an **experimental** state, and it is incomplete.
 For full feature support use the official `libhackrf` C library.
 
 This is tested only on Linux, but it will likely work on other platforms where
