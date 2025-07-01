@@ -1,9 +1,9 @@
 use hackrfone::{
-    iq_to_cplx_f32,         // build this example with "--features num-complex"
-    num_complex::Complex32, // build this example with "--features num-complex"
     HackRfOne,
     RxMode,
     UnknownMode,
+    iq_to_cplx_f32,         // build this example with "--features num-complex"
+    num_complex::Complex32, // build this example with "--features num-complex"
 };
 use std::{
     sync::mpsc::{self, TryRecvError},

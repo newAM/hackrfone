@@ -2,7 +2,7 @@
 name = "hackrfone"
 version = "0.2.3"
 authors = ["Alex Martens <alex@thinglab.org>"]
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/newAM/hackrfone"
 license = "MIT"
 description = "Rust library for the HackRF One software defined radio."

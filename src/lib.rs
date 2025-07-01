@@ -6,7 +6,7 @@
 
 pub use rusb;
 
-use rusb::{request_type, Direction, GlobalContext, Recipient, RequestType, UsbContext, Version};
+use rusb::{Direction, GlobalContext, Recipient, RequestType, UsbContext, Version, request_type};
 use std::time::Duration;
 
 #[cfg(feature = "num-complex")]
@@ -175,7 +175,7 @@ impl HackRfOne<UnknownMode> {
                             desc,
                             mode: UnknownMode,
                             to: Duration::from_secs(1),
-                        })
+                        });
                     }
                     Err(_) => continue,
                 }
@@ -263,7 +263,7 @@ impl<MODE> HackRfOne<MODE> {
     /// # Example
     ///
     /// ```no_run
-    /// use hackrfone::{rusb, HackRfOne, UnknownMode};
+    /// use hackrfone::{HackRfOne, UnknownMode, rusb};
     ///
     /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
     /// assert_eq!(radio.device_version(), rusb::Version(1, 0, 4));
@@ -691,7 +691,7 @@ mod freq_params {
 /// Post-processing sample data.
 ///
 /// ```no_run
-/// use hackrfone::{iq_to_cplx_i8, HackRfOne, RxMode, UnknownMode};
+/// use hackrfone::{HackRfOne, RxMode, UnknownMode, iq_to_cplx_i8};
 ///
 /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
 /// let mut radio: HackRfOne<RxMode> = radio.into_rx_mode()?;
@@ -733,7 +733,7 @@ pub fn iq_to_cplx_i8(i: u8, q: u8) -> num_complex::Complex<i8> {
 /// Post-processing sample data.
 ///
 /// ```no_run
-/// use hackrfone::{iq_to_cplx_f32, HackRfOne, RxMode, UnknownMode};
+/// use hackrfone::{HackRfOne, RxMode, UnknownMode, iq_to_cplx_f32};
 ///
 /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
 /// let mut radio: HackRfOne<RxMode> = radio.into_rx_mode()?;
