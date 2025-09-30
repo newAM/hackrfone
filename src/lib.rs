@@ -1,7 +1,7 @@
 //! HackRF One API.
 //!
 //! To get started take a look at [`HackRfOne::new`].
-#![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
 pub use rusb;
