@@ -12,7 +12,7 @@ categories = ["hardware-support"]
 homepage = "https://github.com/newAM/hackrfone"
 
 [dependencies]
-rusb = "~0.9"
+nusb = "0.2.1"
 
 [dependencies.num-complex]
 version = "~0.4"

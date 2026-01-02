@@ -4,9 +4,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
-pub use rusb;
+use std::io;
+use std::io::Read;
+pub use nusb;
 
-use rusb::{Direction, GlobalContext, Recipient, RequestType, UsbContext, Version, request_type};
+use nusb::{list_devices, Interface, MaybeFuture};
+use nusb::transfer::{ControlIn, ControlOut, ControlType, Recipient, Direction, Bulk, In};
 use std::time::Duration;
 
 #[cfg(feature = "num-complex")]
@@ -65,7 +68,7 @@ impl From<Request> for u8 {
 
 #[allow(dead_code)]
 #[repr(u8)]
-enum TranscieverMode {
+enum TransceiverMode {
     Off = 0,
     Receive = 1,
     Transmit = 2,
@@ -74,23 +77,27 @@ enum TranscieverMode {
     RxSweep = 5,
 }
 
-impl From<TranscieverMode> for u8 {
-    fn from(tm: TranscieverMode) -> Self {
+impl From<TransceiverMode> for u8 {
+    fn from(tm: TransceiverMode) -> Self {
         tm as u8
     }
 }
 
-impl From<TranscieverMode> for u16 {
-    fn from(tm: TranscieverMode) -> Self {
+impl From<TransceiverMode> for u16 {
+    fn from(tm: TransceiverMode) -> Self {
         tm as u16
     }
 }
 
 /// HackRF One errors.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Error {
     /// USB error.
-    Usb(rusb::Error),
+    Usb(nusb::Error),
+    /// USB Connection Errors
+    UsbTransfer(nusb::transfer::TransferError),
+    /// IO Error
+    IO(io::Error),
     /// Failed to transfer all bytes in a control transfer.
     CtrlTransfer {
         /// Control transfer direction.
@@ -113,15 +120,53 @@ pub enum Error {
     Argument,
 }
 
-impl From<rusb::Error> for Error {
-    fn from(e: rusb::Error) -> Self {
+impl From<nusb::Error> for Error {
+    fn from(e: nusb::Error) -> Self {
         Error::Usb(e)
     }
+}
+
+impl From<nusb::transfer::TransferError> for Error {
+    fn from(e: nusb::transfer::TransferError) -> Self { Error::UsbTransfer(e)}
+}
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Self { Error::IO(e)}
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
+    }
+}
+
+#[derive(Clone, Debug)]
+/// Version used to denote the parts of BCD
+pub struct Version {
+    /// Major version XX.0.0
+    pub major: u8,
+    /// Minor version 00.X.0
+    pub minor: u8,
+    /// Sub Minor version 00.0.X
+    pub sub_minor: u8,
+}
+
+impl Version {
+    fn from_bcd(raw: u16) -> Self {
+        // 0xJJMN JJ major, M minor, N sub-minor
+        // Binary Coded Decimal
+        let major0: u8 = ((raw & 0xF000) >> 12) as u8;
+        let major1: u8 = ((raw & 0x0F00) >> 8) as u8;
+
+        let minor: u8 = ((raw & 0x00F0) >> 4) as u8 ;
+
+        let sub_minor: u8 = (raw & 0x000F) as u8;
+
+        Self {
+            major: (major0 * 10) + major1,
+            minor,
+            sub_minor,
+        }
     }
 }
 
@@ -137,11 +182,12 @@ pub struct UnknownMode;
 
 /// HackRF One software defined radio.
 pub struct HackRfOne<MODE> {
-    dh: rusb::DeviceHandle<GlobalContext>,
-    desc: rusb::DeviceDescriptor,
+    dh: nusb::Device,
+    desc: nusb::descriptors::DeviceDescriptor,
+    interface: Interface,
     #[allow(dead_code)]
     mode: MODE,
-    to: Duration,
+    timeout: Duration,
 }
 
 impl HackRfOne<UnknownMode> {
@@ -154,27 +200,23 @@ impl HackRfOne<UnknownMode> {
     ///
     /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
     /// ```
+    #[must_use]
     pub fn new() -> Option<HackRfOne<UnknownMode>> {
-        let ctx: GlobalContext = GlobalContext {};
-        let devices = match ctx.devices() {
-            Ok(d) => d,
-            Err(_) => return None,
-        };
+        let Ok(devices) = list_devices().wait() else { return None };
 
-        for device in devices.iter() {
-            let desc = match device.device_descriptor() {
-                Ok(d) => d,
-                Err(_) => continue,
-            };
-
-            if desc.vendor_id() == HACKRF_USB_VID && desc.product_id() == HACKRF_ONE_USB_PID {
-                match device.open() {
+        for device in devices {
+            if device.vendor_id() == HACKRF_USB_VID && device.product_id() == HACKRF_ONE_USB_PID {
+                match device.open().wait() {
                     Ok(handle) => {
+                        let Ok(interface) = handle.claim_interface(0).wait()
+                        else { return None };
+
                         return Some(HackRfOne {
+                            desc: handle.device_descriptor(),
                             dh: handle,
-                            desc,
+                            interface,
                             mode: UnknownMode,
-                            to: Duration::from_secs(1),
+                            timeout: Duration::from_secs(1),
                         });
                     }
                     Err(_) => continue,
@@ -193,23 +235,23 @@ impl<MODE> HackRfOne<MODE> {
         value: u16,
         index: u16,
     ) -> Result<[u8; N], Error> {
-        let mut buf: [u8; N] = [0; N];
-        let n: usize = self.dh.read_control(
-            request_type(Direction::In, RequestType::Vendor, Recipient::Device),
-            request.into(),
+        let buf = self.interface.control_in(ControlIn {
+            control_type: ControlType::Vendor,
+            recipient: Recipient::Device,
+            request: request.into(),
             value,
             index,
-            &mut buf,
-            self.to,
-        )?;
-        if n != buf.len() {
+            length: N as u16,
+        }, self.timeout).wait()?;
+
+        if N == buf.len() {
+            Ok(<[u8; N]>::try_from(buf).expect("This should never happen"))
+        } else {
             Err(Error::CtrlTransfer {
                 dir: Direction::In,
-                actual: n,
-                expected: buf.len(),
+                actual: buf.len(),
+                expected: N,
             })
-        } else {
-            Ok(buf)
         }
     }
 
@@ -220,33 +262,26 @@ impl<MODE> HackRfOne<MODE> {
         index: u16,
         buf: &[u8],
     ) -> Result<(), Error> {
-        let n: usize = self.dh.write_control(
-            request_type(Direction::Out, RequestType::Vendor, Recipient::Device),
-            request.into(),
+        self.interface.control_out(ControlOut {
+            control_type: ControlType::Vendor,
+            recipient: Recipient::Device,
+            request: request.into(),
             value,
             index,
-            buf,
-            self.to,
-        )?;
-        if n != buf.len() {
-            Err(Error::CtrlTransfer {
-                dir: Direction::Out,
-                actual: n,
-                expected: buf.len(),
-            })
-        } else {
-            Ok(())
-        }
+            data: &buf,
+        }, self.timeout).wait()?;
+
+        Ok(())
     }
 
     fn check_api_version(&self, min: Version) -> Result<(), Error> {
-        fn version_to_u32(v: Version) -> u32 {
-            ((v.major() as u32) << 16) | ((v.minor() as u32) << 8) | (v.sub_minor() as u32)
+        fn version_to_u32(v: &Version) -> u32 {
+            (u32::from(v.major) << 16) | (u32::from(v.minor) << 8) | u32::from(v.sub_minor)
         }
 
         let v: Version = self.device_version();
-        let v_cmp: u32 = version_to_u32(v);
-        let min_cmp: u32 = version_to_u32(min);
+        let v_cmp: u32 = version_to_u32(&v);
+        let min_cmp: u32 = version_to_u32(&min);
 
         if v_cmp >= min_cmp {
             Ok(())
@@ -266,10 +301,10 @@ impl<MODE> HackRfOne<MODE> {
     /// use hackrfone::{HackRfOne, UnknownMode, rusb};
     ///
     /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
-    /// assert_eq!(radio.device_version(), rusb::Version(1, 0, 4));
+    /// assert_eq!(radio.device_version(), crate::Version(1, 0, 4));
     /// ```
     pub fn device_version(&self) -> Version {
-        self.desc.device_version()
+        Version::from_bcd(self.desc.device_version())
     }
 
     /// Set the timeout for USB transfers.
@@ -286,7 +321,7 @@ impl<MODE> HackRfOne<MODE> {
     /// radio.set_timeout(Duration::from_millis(100))
     /// ```
     pub fn set_timeout(&mut self, duration: Duration) {
-        self.to = duration;
+        self.timeout = duration;
     }
 
     /// Read the board ID.
@@ -317,16 +352,16 @@ impl<MODE> HackRfOne<MODE> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     pub fn version(&self) -> Result<String, Error> {
-        let mut buf: [u8; 16] = [0; 16];
-        let n: usize = self.dh.read_control(
-            request_type(Direction::In, RequestType::Vendor, Recipient::Device),
-            Request::VersionStringRead.into(),
-            0,
-            0,
-            &mut buf,
-            self.to,
-        )?;
-        Ok(String::from_utf8_lossy(&buf[0..n]).into())
+        let buf = self.interface.control_in(ControlIn {
+            control_type: ControlType::Vendor,
+            recipient: Recipient::Device,
+            request: Request::VersionStringRead.into(),
+            value: 0,
+            index: 0,
+            length: 16,
+        }, self.timeout).wait()?;
+
+        Ok(String::from_utf8_lossy(&buf[0..16]).into())
     }
 
     /// Set the center frequency.
@@ -547,12 +582,13 @@ impl<MODE> HackRfOne<MODE> {
         Ok(HackRfOne {
             dh: self.dh,
             desc: self.desc,
+            interface: self.interface,
             mode: UnknownMode,
-            to: self.to,
+            timeout: self.timeout,
         })
     }
 
-    fn set_transceiver_mode(&mut self, mode: TranscieverMode) -> Result<(), Error> {
+    fn set_transceiver_mode(&mut self, mode: TransceiverMode) -> Result<(), Error> {
         self.write_control(Request::SetTransceiverMode, mode.into(), 0, &[])
     }
 
@@ -568,13 +604,13 @@ impl<MODE> HackRfOne<MODE> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     pub fn into_rx_mode(mut self) -> Result<HackRfOne<RxMode>, Error> {
-        self.set_transceiver_mode(TranscieverMode::Receive)?;
-        self.dh.claim_interface(0)?;
+        self.set_transceiver_mode(TransceiverMode::Receive)?;
         Ok(HackRfOne {
             dh: self.dh,
             desc: self.desc,
+            interface: self.interface,
             mode: RxMode,
-            to: self.to,
+            timeout: self.timeout,
         })
     }
 }
@@ -608,7 +644,8 @@ impl HackRfOne<RxMode> {
         const ENDPOINT: u8 = 0x81;
         const MTU: usize = 128 * 1024;
         let mut buf: Vec<u8> = vec![0; MTU];
-        let n: usize = self.dh.read_bulk(ENDPOINT, &mut buf, self.to)?;
+        let mut reader = self.interface.endpoint::<Bulk, In>(ENDPOINT)?.reader(MTU);
+        let n = reader.read(buf.as_mut_slice())?;
         buf.truncate(n);
         Ok(buf)
     }
@@ -627,13 +664,13 @@ impl HackRfOne<RxMode> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     pub fn stop_rx(mut self) -> Result<HackRfOne<UnknownMode>, Error> {
-        self.dh.release_interface(0)?;
-        self.set_transceiver_mode(TranscieverMode::Off)?;
+        self.set_transceiver_mode(TransceiverMode::Off)?;
         Ok(HackRfOne {
             dh: self.dh,
             desc: self.desc,
+            interface: self.interface,
             mode: UnknownMode,
-            to: self.to,
+            timeout: self.timeout,
         })
     }
 }
