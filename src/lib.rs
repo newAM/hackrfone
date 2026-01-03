@@ -255,7 +255,7 @@ impl HackRfOne<UnknownMode> {
             if device.vendor_id() == HACKRF_USB_VID && device.product_id() == HACKRF_ONE_USB_PID {
                 match device.open().wait() {
                     Ok(handle) => {
-                        let Ok(interface) = handle.claim_interface(0).wait() else {
+                        let Ok(interface) = handle.detach_and_claim_interface(0).wait() else {
                             return None;
                         };
 
@@ -432,8 +432,7 @@ impl<MODE> HackRfOne<MODE> {
                 self.timeout,
             )
             .wait()?;
-
-        Ok(String::from_utf8_lossy(&buf[0..16]).into())
+        Ok(String::from_utf8_lossy(&buf).into())
     }
 
     /// Set the center frequency.
