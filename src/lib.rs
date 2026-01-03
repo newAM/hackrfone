@@ -4,12 +4,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
+pub use nusb;
 use std::io;
 use std::io::Read;
-pub use nusb;
 
-use nusb::{list_devices, Interface, MaybeFuture};
-use nusb::transfer::{ControlIn, ControlOut, ControlType, Recipient, Direction, Bulk, In};
+use nusb::transfer::{Bulk, ControlIn, ControlOut, ControlType, Direction, In, Recipient};
+use nusb::{Interface, MaybeFuture, list_devices};
 use std::time::Duration;
 
 #[cfg(feature = "num-complex")]
@@ -127,11 +127,15 @@ impl From<nusb::Error> for Error {
 }
 
 impl From<nusb::transfer::TransferError> for Error {
-    fn from(e: nusb::transfer::TransferError) -> Self { Error::UsbTransfer(e)}
+    fn from(e: nusb::transfer::TransferError) -> Self {
+        Error::UsbTransfer(e)
+    }
 }
 
 impl From<io::Error> for Error {
-    fn from(e: io::Error) -> Self { Error::IO(e)}
+    fn from(e: io::Error) -> Self {
+        Error::IO(e)
+    }
 }
 
 impl std::fmt::Display for Error {
@@ -140,7 +144,7 @@ impl std::fmt::Display for Error {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Version used to denote the parts of BCD
 pub struct Version {
     /// Major version XX.0.0
@@ -158,7 +162,7 @@ impl Version {
         let major0: u8 = ((raw & 0xF000) >> 12) as u8;
         let major1: u8 = ((raw & 0x0F00) >> 8) as u8;
 
-        let minor: u8 = ((raw & 0x00F0) >> 4) as u8 ;
+        let minor: u8 = ((raw & 0x00F0) >> 4) as u8;
 
         let sub_minor: u8 = (raw & 0x000F) as u8;
 
@@ -167,6 +171,47 @@ impl Version {
             minor,
             sub_minor,
         }
+    }
+}
+
+#[cfg(test)]
+mod version_bcd {
+    use super::Version;
+
+    #[test]
+    fn from_bcd() {
+        assert_eq!(
+            Version::from_bcd(0x1234),
+            Version {
+                major: 12,
+                minor: 3,
+                sub_minor: 4
+            }
+        );
+        assert_eq!(
+            Version::from_bcd(0x4321),
+            Version {
+                major: 43,
+                minor: 2,
+                sub_minor: 1
+            }
+        );
+        assert_eq!(
+            Version::from_bcd(0x0200),
+            Version {
+                major: 2,
+                minor: 0,
+                sub_minor: 0
+            }
+        );
+        assert_eq!(
+            Version::from_bcd(0x0110),
+            Version {
+                major: 1,
+                minor: 1,
+                sub_minor: 0
+            }
+        );
     }
 }
 
@@ -202,14 +247,17 @@ impl HackRfOne<UnknownMode> {
     /// ```
     #[must_use]
     pub fn new() -> Option<HackRfOne<UnknownMode>> {
-        let Ok(devices) = list_devices().wait() else { return None };
+        let Ok(devices) = list_devices().wait() else {
+            return None;
+        };
 
         for device in devices {
             if device.vendor_id() == HACKRF_USB_VID && device.product_id() == HACKRF_ONE_USB_PID {
                 match device.open().wait() {
                     Ok(handle) => {
-                        let Ok(interface) = handle.claim_interface(0).wait()
-                        else { return None };
+                        let Ok(interface) = handle.claim_interface(0).wait() else {
+                            return None;
+                        };
 
                         return Some(HackRfOne {
                             desc: handle.device_descriptor(),
@@ -235,14 +283,20 @@ impl<MODE> HackRfOne<MODE> {
         value: u16,
         index: u16,
     ) -> Result<[u8; N], Error> {
-        let buf = self.interface.control_in(ControlIn {
-            control_type: ControlType::Vendor,
-            recipient: Recipient::Device,
-            request: request.into(),
-            value,
-            index,
-            length: N as u16,
-        }, self.timeout).wait()?;
+        let buf = self
+            .interface
+            .control_in(
+                ControlIn {
+                    control_type: ControlType::Vendor,
+                    recipient: Recipient::Device,
+                    request: request.into(),
+                    value,
+                    index,
+                    length: N as u16,
+                },
+                self.timeout,
+            )
+            .wait()?;
 
         if N == buf.len() {
             Ok(<[u8; N]>::try_from(buf).expect("This should never happen"))
@@ -262,14 +316,19 @@ impl<MODE> HackRfOne<MODE> {
         index: u16,
         buf: &[u8],
     ) -> Result<(), Error> {
-        self.interface.control_out(ControlOut {
-            control_type: ControlType::Vendor,
-            recipient: Recipient::Device,
-            request: request.into(),
-            value,
-            index,
-            data: &buf,
-        }, self.timeout).wait()?;
+        self.interface
+            .control_out(
+                ControlOut {
+                    control_type: ControlType::Vendor,
+                    recipient: Recipient::Device,
+                    request: request.into(),
+                    value,
+                    index,
+                    data: buf,
+                },
+                self.timeout,
+            )
+            .wait()?;
 
         Ok(())
     }
@@ -298,10 +357,17 @@ impl<MODE> HackRfOne<MODE> {
     /// # Example
     ///
     /// ```no_run
-    /// use hackrfone::{HackRfOne, UnknownMode, rusb};
+    /// use hackrfone::{HackRfOne, UnknownMode, Version};
     ///
     /// let mut radio: HackRfOne<UnknownMode> = HackRfOne::new().unwrap();
-    /// assert_eq!(radio.device_version(), crate::Version(1, 0, 4));
+    /// assert_eq!(
+    ///     radio.device_version(),
+    ///     Version {
+    ///         major: 1,
+    ///         minor: 0,
+    ///         sub_minor: 4
+    ///     }
+    /// );
     /// ```
     pub fn device_version(&self) -> Version {
         Version::from_bcd(self.desc.device_version())
@@ -352,14 +418,20 @@ impl<MODE> HackRfOne<MODE> {
     /// # Ok::<(), hackrfone::Error>(())
     /// ```
     pub fn version(&self) -> Result<String, Error> {
-        let buf = self.interface.control_in(ControlIn {
-            control_type: ControlType::Vendor,
-            recipient: Recipient::Device,
-            request: Request::VersionStringRead.into(),
-            value: 0,
-            index: 0,
-            length: 16,
-        }, self.timeout).wait()?;
+        let buf = self
+            .interface
+            .control_in(
+                ControlIn {
+                    control_type: ControlType::Vendor,
+                    recipient: Recipient::Device,
+                    request: Request::VersionStringRead.into(),
+                    value: 0,
+                    index: 0,
+                    length: 16,
+                },
+                self.timeout,
+            )
+            .wait()?;
 
         Ok(String::from_utf8_lossy(&buf[0..16]).into())
     }
