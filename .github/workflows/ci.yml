@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env: { "RUSTFLAGS": "-D warnings" }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build
       - run: cargo build --features num-complex
@@ -24,7 +24,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --all-features
 
@@ -32,7 +32,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -41,7 +41,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     env: { "RUSTDOCFLAGS": "-D warnings" }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo doc --no-default-features
       - run: cargo doc --all-features
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     env: { "RUSTDOCFLAGS": "-D warnings --cfg docsrs" }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo +nightly rustdoc --all-features
 
@@ -73,7 +73,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: rust-lang/crates-io-auth-action@v1
         id: auth
       - uses: dtolnay/rust-toolchain@stable
